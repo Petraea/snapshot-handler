@@ -21,7 +21,7 @@ time_separator=config.get('main','separator')
 now = time.time()
 
 def parse_snaps(snapshots):
-   '''Parse a dictionary of snapshot information and return a tuple of each value, and the number of days in the past it was taken.'''
+    '''Parse a dictionary of snapshot information and return a tuple of each value, and the number of days in the past it was taken.'''
     snaps=[]
     for s in snapshots:
         then = time.mktime(snapshots[s]['ctime'])
