@@ -21,6 +21,7 @@ time_separator=config.get('main','separator')
 now = time.time()
 
 def parse_snaps(snapshots):
+   '''Parse a dictionary of snapshot information and return a tuple of each value, and the number of days in the past it was taken.'''
     snaps=[]
     for s in snapshots:
         then = time.mktime(snapshots[s]['ctime'])
@@ -29,6 +30,7 @@ def parse_snaps(snapshots):
     return snaps
 
 def elimination_list(snapshots):
+    '''Parse a dictionary of snapshots with parse_snaps, then select which snapshots fit best with what times. Return a list of dicts containing the excess snapshots.'''
     todel = parse_snaps(snapshots)
     logging.debug("Current snapshot list: %s" % [(x[0]['lv'],int(x[1])) for x in todel])
     for t in snaptimes:
@@ -45,6 +47,7 @@ def elimination_list(snapshots):
     return [x[0] for x in todel]
 
 def get_snapshots(lv_name):
+    '''Call lvs to get a dictionary per LV, then eliminate all LV's that aren't snapshots of the origin LV. Return the origin dict, and the dict of snapshots.'''
     separator='$'
     p = Popen(['lvs','-o','lv_name,lv_all','--separator='+separator],stdout=PIPE)
     values = [x.strip().split(separator) for x in p.communicate()[0].strip().split('\n')]
@@ -58,6 +61,7 @@ def get_snapshots(lv_name):
     return origin_lv, snapdict
 
 def delete_snapshot(snapshot):
+    '''Use lvremove to delete this snapshot dict. This will check to make sure you're only deleting snapshots.'''
     if snapshot['origin']=='':
         raise ValueError("This is not a snapshot!")
     logging.warn('Deleting snapshot %s' % snapshot['lv'])
@@ -69,6 +73,7 @@ def delete_snapshot(snapshot):
         [logging.warn(x.strip()) for x in p.communicate()[0].strip().split('\n')]
 
 def create_snapshot(origin_lv):
+    '''Use lvcreate to create a snapshot or this origin LV dict.'''
     snap_name = origin_lv['lv']+time_separator+time.strftime('%Y%m%d',time.localtime(now))
     cmd = ['lvcreate','-s','--thinpool',origin_lv['pool'],'--name',snap_name,origin_lv['lv']]
     p = Popen(cmd,stdout=PIPE,stderr=STDOUT)
@@ -78,6 +83,7 @@ def create_snapshot(origin_lv):
         [logging.warn(x.strip()) for x in p.communicate()[0].strip().split('\n')]
 
 def do_snapshot(lv_name,no_delete=False,no_create=False):
+    '''Do the main chain of events - get everything, then scan for things to delete, delete then and create new. Will not do so if no_delete or no_create are set.'''
     origin, snaps = get_snapshots(lv_name)
     to_delete = elimination_list(snaps)
     logging.info("Deletion list: %s" % to_delete)
