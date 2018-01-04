@@ -3,7 +3,7 @@ import sys,os,time
 import logging
 import argparse
 from dateutil.parser import parse
-from subprocess import Popen, PIPE
+from subprocess import Popen, PIPE, STDOUT
 try:
    from configparser import ConfigParser
 except:
@@ -62,20 +62,20 @@ def delete_snapshot(snapshot):
         raise ValueError("This is not a snapshot!")
     logging.warn('Deleting snapshot %s' % snapshot['lv'])
     cmd = ['lvremove',snapshot['lv']]
-    p = Popen(cmd,stdout=PIPE,stderr=PIPE)
+    p = Popen(cmd,stdout=PIPE,stderr=STDOUT)
     if p.returncode==0:
-        logging.debug(p.communicate())
+        [logging.debug(x.strip()) for x in p.communicate()[0].strip().split('\n')]
     else:
-        logging.warn(p.communicate())
+        [logging.warn(x.strip()) for x in p.communicate()[0].strip().split('\n')]
 
 def create_snapshot(origin_lv):
     snap_name = origin_lv['lv']+time_separator+time.strftime('%Y%m%d',time.localtime(now))
     cmd = ['lvcreate','-s','--thinpool',origin_lv['pool'],'--name',snap_name,origin_lv['lv']]
-    p = Popen(cmd,stdout=PIPE,stderr=PIPE)
+    p = Popen(cmd,stdout=PIPE,stderr=STDOUT)
     if p.returncode==0:
-        logging.debug(p.communicate())
+        [logging.debug(x.strip()) for x in p.communicate()[0].strip().split('\n')]
     else:
-        logging.warn(p.communicate())
+        [logging.warn(x.strip()) for x in p.communicate()[0].strip().split('\n')]
 
 def do_snapshot(lv_name,no_delete=False,no_create=False):
     origin, snaps = get_snapshots(lv_name)
@@ -99,8 +99,7 @@ if __name__=='__main__':
     logger = logging.getLogger()
     logger.setLevel(min(max(30+(args.q-args.v)*10,0),50))
     ch = logging.StreamHandler()
-    ch.setLevel(logging.DEBUG)
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    formatter = logging.Formatter('%(levelname)s: %(message)s')
     ch.setFormatter(formatter)
     logger.addHandler(ch)
     do_snapshot(args.lv_name,args.D,args.C)
