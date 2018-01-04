@@ -4,13 +4,19 @@ import logging
 import argparse
 from dateutil.parser import parse
 from subprocess import Popen, PIPE
-time_separator='_'
-snaptimes=[1825, #Between 720 and 3650 days old
-           360,  #Between 180 and 720 days old
-           100,   #Between 28 and 180 days old
-           16,    #Between 7 and 28 days old
-           4.5,  #Between 1 and 7 days old
-           0.5]  #Between 0 and 1 days old
+try:
+   from configparser import ConfigParser
+except:
+   from ConfigParser import ConfigParser
+basepath =os.path.dirname(os.path.realpath(__file__))
+config = ConfigParser()
+configfile=basepath+os.sep+'config.cfg'
+if not os.path.exists(configfile):
+    configfile=basepath+os.sep+'config.cfg.example'
+config.read(configfile)
+
+snaptimes = [float(x) for x in config.get('main','times').split(',')]
+time_separator=config.get('main','separator')
 
 now = time.time()
 
